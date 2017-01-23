@@ -15,6 +15,6 @@ COPY . /home/ubuntu/dcgan-completion.tensorflow
 # install requirements
 RUN pip install -r /home/ubuntu/dcgan-completion.tensorflow/requirements.txt
 
-ENTRYPOINT ["/home/ubuntu/dcgan-completion.tensorflow/train-dcgan.py",
-	   "--dataset", "/home/ubuntu/dcgan-completion.tensorflow/data/MS-Celeb-1M-P1/aligned/",
+ENTRYPOINT ["/home/ubuntu/dcgan-completion.tensorflow/train-dcgan.py", \
+	   "--dataset", "/home/ubuntu/dcgan-completion.tensorflow/data/MS-Celeb-1M-P1/aligned/", \
 	   "--epoch", "1"]
