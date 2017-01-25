@@ -212,7 +212,7 @@ Initializing a new one.
                                 './samples/train_{:02d}_{:04d}.png'.format(epoch, idx))
                     print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
-                if np.mod(counter, 500) == 2:
+                if np.mod(counter, 100) == 0:
                     self.save(config.checkpoint_dir, counter)
 
 
