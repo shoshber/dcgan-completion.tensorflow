@@ -303,6 +303,7 @@ Initializing a new one.
                     imgName = os.path.join(config.outDir,
                                            'completed/{:04d}.png'.format(i))
                     save_images(completeed[:batchSz,:,:,:], [nRows,nCols], imgName)
+        return counter
 
     def discriminator(self, image, reuse=False):
         if reuse:

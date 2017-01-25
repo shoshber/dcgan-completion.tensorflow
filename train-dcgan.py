@@ -38,4 +38,5 @@ with tf.Session(config=config) as sess:
     dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=FLAGS.batch_size,
                   is_crop=False, checkpoint_dir=FLAGS.checkpoint_dir)
 
-    dcgan.train(FLAGS)
+    last_step=dcgan.train(FLAGS)
+    dcgan.save(FLAGS.checkpoint_dir, last_step)
