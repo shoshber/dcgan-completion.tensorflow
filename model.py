@@ -110,13 +110,13 @@ class DCGAN(object):
         self.saver = tf.train.Saver(max_to_keep=1)
 
         # Completion.
-        self.mask = tf.placeholder(tf.float32, [None] + self.image_shape, name='mask')
-        self.contextual_loss = tf.reduce_sum(
-            tf.contrib.layers.flatten(
-                tf.abs(tf.mul(self.mask, self.G) - tf.mul(self.mask, self.images))), 1)
-        self.perceptual_loss = self.g_loss
-        self.complete_loss = self.contextual_loss + self.lam*self.perceptual_loss
-        self.grad_complete_loss = tf.gradients(self.complete_loss, self.z)
+        # self.mask = tf.placeholder(tf.float32, [None] + self.image_shape, name='mask')
+        # self.contextual_loss = tf.reduce_sum(
+        #     tf.contrib.layers.flatten(
+        #         tf.abs(tf.mul(self.mask, self.G) - tf.mul(self.mask, self.images))), 1)
+        # self.perceptual_loss = self.g_loss
+        # self.complete_loss = self.contextual_loss + self.lam*self.perceptual_loss
+        # self.grad_complete_loss = tf.gradients(self.complete_loss, self.z)
 
     def train(self, config):
         data = glob(os.path.join(config.dataset, "*.png"))
@@ -311,9 +311,10 @@ Initializing a new one.
 
         h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
-        h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
-        h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv')))
-        h4 = linear(tf.reshape(h3, [-1, 8192]), 1, 'd_h3_lin')
+#        h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
+#        h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv')))
+#        h4 = linear(tf.reshape(h3, [-1, 8192]), 1, 'd_h3_lin')
+        h4 = linear(tf.reshape(h1, [-1, 8192]), 1, 'd_h1_lin')
 
         return tf.nn.sigmoid(h4), h4
 
@@ -327,16 +328,17 @@ Initializing a new one.
             [self.batch_size, 8, 8, self.gf_dim*4], name='g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
 
-        h2, self.h2_w, self.h2_b = conv2d_transpose(h1,
-            [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2', with_w=True)
-        h2 = tf.nn.relu(self.g_bn2(h2))
+        # h2, self.h2_w, self.h2_b = conv2d_transpose(h1,
+        #     [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2', with_w=True)
+        # h2 = tf.nn.relu(self.g_bn2(h2))
 
-        h3, self.h3_w, self.h3_b = conv2d_transpose(h2,
-            [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3', with_w=True)
-        h3 = tf.nn.relu(self.g_bn3(h3))
+        # h3, self.h3_w, self.h3_b = conv2d_transpose(h2,
+        #     [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3', with_w=True)
+        # h3 = tf.nn.relu(self.g_bn3(h3))
 
-        h4, self.h4_w, self.h4_b = conv2d_transpose(h3,
-            [self.batch_size, 64, 64, 3], name='g_h4', with_w=True)
+        # h4, self.h4_w, self.h4_b = conv2d_transpose(h3,
+        h4, self.h4_w, self.h4_b = conv2d_transpose(h1,
+                    [self.batch_size, 16, 16, 3], name='g_h4', with_w=True)
 
         return tf.nn.tanh(h4)
 
@@ -350,13 +352,14 @@ Initializing a new one.
         h1 = conv2d_transpose(h0, [self.batch_size, 8, 8, self.gf_dim*4], name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(h1, train=False))
 
-        h2 = conv2d_transpose(h1, [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2')
-        h2 = tf.nn.relu(self.g_bn2(h2, train=False))
+        # h2 = conv2d_transpose(h1, [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2')
+        # h2 = tf.nn.relu(self.g_bn2(h2, train=False))
 
-        h3 = conv2d_transpose(h2, [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3')
-        h3 = tf.nn.relu(self.g_bn3(h3, train=False))
+        # h3 = conv2d_transpose(h2, [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3')
+        # h3 = tf.nn.relu(self.g_bn3(h3, train=False))
 
-        h4 = conv2d_transpose(h3, [self.batch_size, 64, 64, 3], name='g_h4')
+        # h4 = conv2d_transpose(h3, [self.batch_size, 64, 64, 3], name='g_h4')
+        h4 = conv2d_transpose(h1, [self.batch_size, 16, 16, 3], name='g_h4')
 
         return tf.nn.tanh(h4)
 
