@@ -24,7 +24,7 @@ class DCGAN(object):
 
         Args:
             sess: TensorFlow session
-            batch_size: The size of batch. Should be specified before training.
+            batch_size: The size of batch. Should be specified before trainig.
             z_dim: (optional) Dimension of dim for Z. [100]
             gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
             df_dim: (optional) Dimension of discrim filters in first conv layer. [64]
@@ -108,15 +108,6 @@ class DCGAN(object):
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
 
         self.saver = tf.train.Saver(max_to_keep=1)
-
-        # Completion.
-        # self.mask = tf.placeholder(tf.float32, [None] + self.image_shape, name='mask')
-        # self.contextual_loss = tf.reduce_sum(
-        #     tf.contrib.layers.flatten(
-        #         tf.abs(tf.mul(self.mask, self.G) - tf.mul(self.mask, self.images))), 1)
-        # self.perceptual_loss = self.g_loss
-        # self.complete_loss = self.contextual_loss + self.lam*self.perceptual_loss
-        # self.grad_complete_loss = tf.gradients(self.complete_loss, self.z)
 
     def train(self, config):
         data = glob(os.path.join(config.dataset, "*.png"))
@@ -311,55 +302,48 @@ Initializing a new one.
 
         h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
-#        h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
-#        h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv')))
-#        h4 = linear(tf.reshape(h3, [-1, 8192]), 1, 'd_h3_lin')
         h4 = linear(tf.reshape(h1, [-1, 8192]), 1, 'd_h1_lin')
 
         return tf.nn.sigmoid(h4), h4
 
     def generator(self, z):
-        self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*8*4*4, 'g_h0_lin', with_w=True)
+        def define_constant(dividend, divisor):
+            # making sure the constants are ints
+            quotient = int(dividend / divisor)
+            if abs(quotient - dividend / divisor) / 2 > .2:
+                raise Exception("Bad dimension. Haven't figured out how or if to deal with this.")
+            return quotient
 
-        self.h0 = tf.reshape(self.z_, [-1, 4, 4, self.gf_dim * 8])
+        self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*4*4*8, 'g_h0_lin', with_w=True)
+
+        # some constants to share between generator and sampler
+        self.STARTING_GF_DIM = define_constant(self.gf_dim, 2)
+        self.STARTING_IMG_DIM = define_constant(64, 4) # side length of generated image, 2^(number of layers - 1)
+
+        self.h0 = tf.reshape(self.z_, [-1, self.STARTING_IMG_DIM, self.STARTING_IMG_DIM, self.STARTING_GF_DIM])
         h0 = tf.nn.relu(self.g_bn0(self.h0))
 
         self.h1, self.h1_w, self.h1_b = conv2d_transpose(h0,
-            [self.batch_size, 8, 8, self.gf_dim*4], name='g_h1', with_w=True)
+                    [self.batch_size, self.STARTING_IMG_DIM * 2, self.STARTING_IMG_DIM * 2, self.STARTING_GF_DIM * 2], name='g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
 
-        # h2, self.h2_w, self.h2_b = conv2d_transpose(h1,
-        #     [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2', with_w=True)
-        # h2 = tf.nn.relu(self.g_bn2(h2))
-
-        # h3, self.h3_w, self.h3_b = conv2d_transpose(h2,
-        #     [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3', with_w=True)
-        # h3 = tf.nn.relu(self.g_bn3(h3))
-
-        # h4, self.h4_w, self.h4_b = conv2d_transpose(h3,
         h4, self.h4_w, self.h4_b = conv2d_transpose(h1,
-                    [self.batch_size, 16, 16, 3], name='g_h4', with_w=True)
+                    [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, 3], name='g_h4', with_w=True)
 
         return tf.nn.tanh(h4)
 
     def sampler(self, z, y=None):
+        ''' cannot be called before generator '''
         tf.get_variable_scope().reuse_variables()
 
         h0 = tf.reshape(linear(z, self.gf_dim*8*4*4, 'g_h0_lin'),
-                        [-1, 4, 4, self.gf_dim * 8])
+                        [-1, self.STARTING_IMG_DIM, self.STARTING_IMG_DIM, self.STARTING_GF_DIM])
         h0 = tf.nn.relu(self.g_bn0(h0, train=False))
 
-        h1 = conv2d_transpose(h0, [self.batch_size, 8, 8, self.gf_dim*4], name='g_h1')
+        h1 = conv2d_transpose(h0, [self.batch_size, self.STARTING_IMG_DIM * 2, self.STARTING_IMG_DIM * 2, self.STARTING_GF_DIM * 2], name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(h1, train=False))
 
-        # h2 = conv2d_transpose(h1, [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2')
-        # h2 = tf.nn.relu(self.g_bn2(h2, train=False))
-
-        # h3 = conv2d_transpose(h2, [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3')
-        # h3 = tf.nn.relu(self.g_bn3(h3, train=False))
-
-        # h4 = conv2d_transpose(h3, [self.batch_size, 64, 64, 3], name='g_h4')
-        h4 = conv2d_transpose(h1, [self.batch_size, 16, 16, 3], name='g_h4')
+        h4 = conv2d_transpose(h1, [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, 3], name='g_h4')
 
         return tf.nn.tanh(h4)
 
