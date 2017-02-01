@@ -112,7 +112,7 @@ class DCGAN(object):
     def train(self, config):
         data = glob(os.path.join(config.dataset, "*.png"))
         #np.random.shuffle(data)
-        assert(len(data) > 0)
+        assert(len(data) >= self.batch_size)
 
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
@@ -160,7 +160,6 @@ Initializing a new one.
         for epoch in xrange(config.epoch):
             data = glob(os.path.join(config.dataset, "*.png"))
 
-            assert len(data) > self.batch_size
             batch_idxs = min(len(data), config.train_size) // self.batch_size
 
             for idx in xrange(0, batch_idxs):
