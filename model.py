@@ -11,13 +11,14 @@ from glob import glob
 import tensorflow as tf
 from six.moves import xrange
 
+from ops import get_image
 from ops import *
 from utils import *
 
 class DCGAN(object):
     def __init__(self, sess, image_size=64, is_crop=False,
                  batch_size=64, sample_size=64,
-                 z_dim=100, gf_dim=64, df_dim=64,
+                 z_dim=100, gf_dim=128, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=3,
                  checkpoint_dir=None, lam=0.1):
         """
@@ -76,9 +77,9 @@ class DCGAN(object):
 
         self.G = self.generator(self.z)
         self.D, self.D_logits = self.discriminator(self.images)
+        self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
 
         self.sampler = self.sampler(self.z)
-        self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
 
         self.d_sum = tf.histogram_summary("d", self.D)
         self.d__sum = tf.histogram_summary("d_", self.D_)
