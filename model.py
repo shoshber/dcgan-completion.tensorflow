@@ -49,7 +49,7 @@ class DCGAN(object):
 
         self.lam = lam
 
-        self.c_dim = 3
+        self.c_dim = c_dim
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
@@ -329,7 +329,7 @@ Initializing a new one.
         h1 = tf.nn.relu(self.g_bn1(self.h1))
 
         h4, self.h4_w, self.h4_b = conv2d_transpose(h1,
-                    [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, 3], name='g_h4', with_w=True)
+                    [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, self.c_dim], name='g_h4', with_w=True)
 
         return tf.nn.tanh(h4)
 
@@ -344,7 +344,7 @@ Initializing a new one.
         h1 = conv2d_transpose(h0, [self.batch_size, self.STARTING_IMG_DIM * 2, self.STARTING_IMG_DIM * 2, self.STARTING_GF_DIM * 2], name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(h1, train=False))
 
-        h4 = conv2d_transpose(h1, [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, 3], name='g_h4')
+        h4 = conv2d_transpose(h1, [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, self.c_dim], name='g_h4')
 
         return tf.nn.tanh(h4)
 
