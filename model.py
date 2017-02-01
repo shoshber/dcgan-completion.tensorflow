@@ -315,11 +315,11 @@ Initializing a new one.
                 raise Exception("Bad dimension. Haven't figured out how or if to deal with this.")
             return quotient
 
-        self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*4*4*8, 'g_h0_lin', with_w=True)
-
         # some constants to share between generator and sampler
         self.STARTING_GF_DIM = define_constant(self.gf_dim, 2)
-        self.STARTING_IMG_DIM = define_constant(64, 4) # side length of generated image, 2^(number of layers - 1)
+        self.STARTING_IMG_DIM = define_constant(self.image_size, 4) # 2^(number of layers - 1)
+
+        self.z_, self.h0_w, self.h0_b = linear(z, self.STARTING_IMG_DIM * self.STARTING_IMG_DIM * self.STARTING_GF_DIM, 'g_h0_lin', with_w=True)
 
         self.h0 = tf.reshape(self.z_, [-1, self.STARTING_IMG_DIM, self.STARTING_IMG_DIM, self.STARTING_GF_DIM])
         h0 = tf.nn.relu(self.g_bn0(self.h0))
@@ -337,7 +337,7 @@ Initializing a new one.
         ''' cannot be called before generator '''
         tf.get_variable_scope().reuse_variables()
 
-        h0 = tf.reshape(linear(z, self.gf_dim*8*4*4, 'g_h0_lin'),
+        h0 = tf.reshape(linear(z, self.STARTING_IMG_DIM * self.STARTING_IMG_DIM * self.STARTING_GF_DIM, 'g_h0_lin'),
                         [-1, self.STARTING_IMG_DIM, self.STARTING_IMG_DIM, self.STARTING_GF_DIM])
         h0 = tf.nn.relu(self.g_bn0(h0, train=False))
 
