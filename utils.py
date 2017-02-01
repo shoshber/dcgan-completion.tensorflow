@@ -18,14 +18,17 @@ pp = pprint.PrettyPrinter()
 
 get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
-def get_image(image_path, image_size, is_crop=True):
-    return transform(imread(image_path), image_size, is_crop)
+def get_image(image_path, image_size, mode, is_crop=True):
+    image_array = transform(imread(image_path, mode=mode), image_size, is_crop)
+    if image_array.ndim == 3: # we want a 4-D array
+        image_array = image_array[:, :, :, np.newaxis]
+    return image_array
 
 def save_images(images, size, image_path):
     return imsave(inverse_transform(images), size, image_path)
 
-def imread(path):
-    return scipy.misc.imread(path, mode='RGB').astype(np.float)
+def imread(path, mode):
+    return scipy.misc.imread(path, mode=mode).astype(np.float)
 
 def merge_images(images, size):
     return inverse_transform(images)

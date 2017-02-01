@@ -19,7 +19,7 @@ class DCGAN(object):
     def __init__(self, sess, image_size=64, is_crop=False,
                  batch_size=64, sample_size=64,
                  z_dim=100, gf_dim=128, df_dim=64,
-                 gfc_dim=1024, dfc_dim=1024, c_dim=3,
+                 gfc_dim=1024, dfc_dim=1024, c_dim=1,
                  checkpoint_dir=None, lam=0.1):
         """
 
@@ -38,7 +38,9 @@ class DCGAN(object):
         self.batch_size = batch_size
         self.image_size = image_size
         self.sample_size = sample_size
-        self.image_shape = [image_size, image_size, 3]
+        self.image_shape = [image_size, image_size, c_dim]
+
+        self.imread_mode = 'L' if c_dim == 1 else 'RGB'
 
         self.z_dim = z_dim
 
@@ -129,7 +131,7 @@ class DCGAN(object):
 
         sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
         sample_files = data[0:self.sample_size]
-        sample = [get_image(sample_file, self.image_size, is_crop=self.is_crop) for sample_file in sample_files]
+        sample = [get_image(sample_file, self.image_size, mode=self.imread_mode, is_crop=self.is_crop) for sample_file in sample_files]
         sample_images = np.array(sample).astype(np.float32)
 
         counter = 1
@@ -169,7 +171,7 @@ Initializing a new one.
             for idx in xrange(0, batch_idxs):
                 print('idx', 'SUP')
                 batch_files = data[idx*config.batch_size:(idx+1)*config.batch_size]
-                batch = [get_image(batch_file, self.image_size, is_crop=self.is_crop)
+                batch = [get_image(batch_file, self.image_size, mode=self.imread_mode, is_crop=self.is_crop)
                          for batch_file in batch_files]
                 batch_images = np.array(batch).astype(np.float32)
 
@@ -254,7 +256,7 @@ Initializing a new one.
             u = min((idx+1)*self.batch_size, nImgs)
             batchSz = u-l
             batch_files = config.imgs[l:u]
-            batch = [get_image(batch_file, self.image_size, is_crop=self.is_crop)
+            batch = [get_image(batch_file, self.image_size, mode=self.imread_mode, is_crop=self.is_crop)
                      for batch_file in batch_files]
             batch_images = np.array(batch).astype(np.float32)
             if batchSz < self.batch_size:

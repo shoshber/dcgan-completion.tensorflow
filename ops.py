@@ -71,7 +71,7 @@ def binary_cross_entropy(preds, targets, name=None):
                               (1. - targets) * tf.log(1. - preds + eps)))
 
 def conv_cond_concat(x, y):
-    """Concatenate conditioning vector on feature map axis."""
+    """Concatenate conditioning vector on feature map axis. Appears to not be being used. """
     x_shapes = x.get_shape()
     y_shapes = y.get_shape()
     return tf.concat(3, [x, y*tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])])
