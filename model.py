@@ -158,7 +158,10 @@ Initializing a new one.
 
 """)
 
-        for epoch in xrange(config.epoch):
+        #for epoch in xrange(config.epoch):
+        epoch = 0
+        n_samples = 0
+        while True:
             data = glob(os.path.join(config.dataset, "*.png"))
 
             batch_idxs = min(len(data), config.train_size) // self.batch_size
@@ -196,7 +199,9 @@ Initializing a new one.
                     % (epoch, idx, batch_idxs,
                         time.time() - start_time, errD_fake+errD_real, errG))
 
-                if np.mod(counter, 20) == 0:
+                # if np.mod(counter, 20) == 0:
+                if np.power(1.1, n_samples) <= counter:
+                    n_samples += 1
                     samples, d_loss, g_loss = self.sess.run(
                         [self.sampler, self.d_loss, self.g_loss],
                         feed_dict={self.z: sample_z, self.images: sample_images}
@@ -208,6 +213,7 @@ Initializing a new one.
                 if np.mod(counter, 100) == 0:
                     self.save(config.checkpoint_dir, counter)
                 counter += 1
+            epoch += 1
 
     def complete(self, config):
         os.makedirs(os.path.join(config.outDir, 'hats_imgs'), exist_ok=True)
