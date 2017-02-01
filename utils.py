@@ -20,8 +20,8 @@ get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
 def get_image(image_path, image_size, mode, is_crop=True):
     image_array = transform(imread(image_path, mode=mode), image_size, is_crop)
-    if image_array.ndim == 3: # we want a 4-D array
-        image_array = image_array[:, :, :, np.newaxis]
+    if image_array.ndim == 2: # we want a 3-D array
+        image_array = image_array[:, :, np.newaxis]
     return image_array
 
 def save_images(images, size, image_path):
