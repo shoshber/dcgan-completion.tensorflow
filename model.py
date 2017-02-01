@@ -159,9 +159,12 @@ Initializing a new one.
 
         for epoch in xrange(config.epoch):
             data = glob(os.path.join(config.dataset, "*.png"))
+
+            assert len(data) > self.batch_size
             batch_idxs = min(len(data), config.train_size) // self.batch_size
 
             for idx in xrange(0, batch_idxs):
+                print('idx', 'SUP')
                 batch_files = data[idx*config.batch_size:(idx+1)*config.batch_size]
                 batch = [get_image(batch_file, self.image_size, is_crop=self.is_crop)
                          for batch_file in batch_files]
