@@ -114,8 +114,7 @@ class DCGAN(object):
         self.saver = tf.train.Saver(max_to_keep=1)
 
     def train(self, config):
-        data = glob(os.path.join(config.dataset, '*')
-        #np.random.shuffle(data)
+        data = glob(os.path.join(config.dataset, '*'))
         assert(len(data) >= self.batch_size)
 
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
