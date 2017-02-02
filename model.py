@@ -165,12 +165,9 @@ Initializing a new one.
         epoch = 0
         n_samples = 0
         while True:
-            data = glob(os.path.join(config.dataset, "*.png"))
-
             batch_idxs = min(len(data), config.train_size) // self.batch_size
 
             for idx in xrange(0, batch_idxs):
-                print('idx', 'SUP')
                 batch_files = data[idx*config.batch_size:(idx+1)*config.batch_size]
                 batch = [get_image(batch_file, self.image_size, mode=self.imread_mode, is_crop=self.is_crop)
                          for batch_file in batch_files]
