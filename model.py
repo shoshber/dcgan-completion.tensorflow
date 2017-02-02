@@ -114,7 +114,7 @@ class DCGAN(object):
         self.saver = tf.train.Saver(max_to_keep=1)
 
     def train(self, config):
-        data = glob(os.path.join(config.dataset, "*.png"))
+        data = glob(os.path.join(config.dataset, '*')
         #np.random.shuffle(data)
         assert(len(data) >= self.batch_size)
 
@@ -169,7 +169,7 @@ Initializing a new one.
 
             for idx in xrange(0, batch_idxs):
                 batch_files = data[idx*config.batch_size:(idx+1)*config.batch_size]
-                batch = [get_image(batch_file, self.image_size, mode=self.imread_mode, is_crop=self.is_crop)
+                batch = [utils.get_nifti_image(batch_file, self.image_size)
                          for batch_file in batch_files]
                 batch_images = np.array(batch).astype(np.float32)
 
@@ -253,7 +253,7 @@ Initializing a new one.
             u = min((idx+1)*self.batch_size, nImgs)
             batchSz = u-l
             batch_files = config.imgs[l:u]
-            batch = [get_image(batch_file, self.image_size, mode=self.imread_mode, is_crop=self.is_crop)
+            batch = [utils.get_nifti_image(batch_file, self.image_size)
                      for batch_file in batch_files]
             batch_images = np.array(batch).astype(np.float32)
             if batchSz < self.batch_size:

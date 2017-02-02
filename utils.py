@@ -10,9 +10,11 @@ import math
 import json
 import random
 import pprint
+from time import gmtime, strftime
+
 import scipy.misc
 import numpy as np
-from time import gmtime, strftime
+import nibabel as nb
 
 pp = pprint.PrettyPrinter()
 
@@ -20,9 +22,35 @@ get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
 def get_image(image_path, image_size, mode, is_crop=True):
     image_array = transform(imread(image_path, mode=mode), image_size, is_crop)
+    return as_3d(image_array)
+
+def get_nifti_image(image_path, image_size):
+    ''' Given '.nii' file, return an arbitrary 2D slice, shape (image_size, image_size, 1) '''
+
+    def get_pad_width(dim):
+        ''' how much to pad the array on each size to achieve image_size '''
+        assert dim <= image_size
+        diff = image_size - dim
+        pad = diff // 2
+
+        if np.mod(diff, 2) == 1:
+            return pad, pad + 1
+        return pad, pad
+
+    image_array = nb.load(image_path).get_data()[:, :, 0]
+    length, width = image_array.shape
+
+    length_pads = get_pad_width(length)
+    width_pads = get_pad_width(width)
+
+    return as_3d(np.pad(image_array, (length_pads, width_pads), 'constant', constant_values=0))
+
+def as_3d(image_array):
+    ''' converts 2d array to a a 3d array with the last axis being size 1 '''
     if image_array.ndim == 2: # we want a 3-D array
         image_array = image_array[:, :, np.newaxis]
     return image_array
+
 
 def save_images(images, size, image_path):
     return imsave(inverse_transform(images), size, image_path)
