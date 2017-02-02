@@ -8,12 +8,13 @@ from __future__ import division
 import os
 import time
 from glob import glob
+
+import numpy as np
 import tensorflow as tf
 from six.moves import xrange
 
-from ops import get_image
-from ops import *
-from utils import *
+import ops
+import utils
 
 class DCGAN(object):
     def __init__(self, sess, image_size=64, is_crop=False,
@@ -55,14 +56,14 @@ class DCGAN(object):
         self.c_dim = c_dim
 
         # batch normalization : deals with poor initialization helps gradient flow
-        self.d_bn1 = batch_norm(name='d_bn1')
-        self.d_bn2 = batch_norm(name='d_bn2')
-        self.d_bn3 = batch_norm(name='d_bn3')
+        self.d_bn1 = ops.batch_norm(name='d_bn1')
+        self.d_bn2 = ops.batch_norm(name='d_bn2')
+        self.d_bn3 = ops.batch_norm(name='d_bn3')
 
-        self.g_bn0 = batch_norm(name='g_bn0')
-        self.g_bn1 = batch_norm(name='g_bn1')
-        self.g_bn2 = batch_norm(name='g_bn2')
-        self.g_bn3 = batch_norm(name='g_bn3')
+        self.g_bn0 = ops.batch_norm(name='g_bn0')
+        self.g_bn1 = ops.batch_norm(name='g_bn1')
+        self.g_bn2 = ops.batch_norm(name='g_bn2')
+        self.g_bn3 = ops.batch_norm(name='g_bn3')
 
         self.checkpoint_dir = checkpoint_dir
         self.build_model()
@@ -131,7 +132,7 @@ class DCGAN(object):
 
         sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
         sample_files = data[0:self.sample_size]
-        sample = [get_image(sample_file, self.image_size, mode=self.imread_mode, is_crop=self.is_crop) for sample_file in sample_files]
+        sample = [utils.get_nifti_image(sample_file, self.image_size) for sample_file in sample_files]
         sample_images = np.array(sample).astype(np.float32)
 
         counter = 1
@@ -208,7 +209,7 @@ Initializing a new one.
                         [self.sampler, self.d_loss, self.g_loss],
                         feed_dict={self.z: sample_z, self.images: sample_images}
                     )
-                    save_images(samples, [8, 8],
+                    utils.save_images(samples, [8, 8],
                                 './samples/train_{:02d}_{:04d}.png'.format(epoch, idx))
                     print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
@@ -226,7 +227,6 @@ Initializing a new one.
         isLoaded = self.load(self.checkpoint_dir)
         assert(isLoaded)
 
-        # data = glob(os.path.join(config.dataset, "*.png"))
         nImgs = len(config.imgs)
 
         batch_idxs = int(np.ceil(nImgs/self.batch_size))
@@ -271,10 +271,10 @@ Initializing a new one.
 
             nRows = np.ceil(batchSz/8)
             nCols = 8
-            save_images(batch_images[:batchSz,:,:,:], [nRows,nCols],
+            utils.save_images(batch_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'before.png'))
             masked_images = np.multiply(batch_images, batch_mask)
-            save_images(masked_images[:batchSz,:,:,:], [nRows,nCols],
+            utils.save_images(masked_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'masked.png'))
 
             for i in xrange(config.nIter):
@@ -297,22 +297,22 @@ Initializing a new one.
                                            'hats_imgs/{:04d}.png'.format(i))
                     nRows = np.ceil(batchSz/8)
                     nCols = 8
-                    save_images(G_imgs[:batchSz,:,:,:], [nRows,nCols], imgName)
+                    utils.save_images(G_imgs[:batchSz,:,:,:], [nRows,nCols], imgName)
 
                     inv_masked_hat_images = np.multiply(G_imgs, 1.0-batch_mask)
                     completeed = masked_images + inv_masked_hat_images
                     imgName = os.path.join(config.outDir,
                                            'completed/{:04d}.png'.format(i))
-                    save_images(completeed[:batchSz,:,:,:], [nRows,nCols], imgName)
+                    utils.save_images(completeed[:batchSz,:,:,:], [nRows,nCols], imgName)
         return counter
 
     def discriminator(self, image, reuse=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
-        h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
-        h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
-        h4 = linear(tf.reshape(h1, [-1, 8192]), 1, 'd_h1_lin')
+        h0 = ops.lrelu(ops.conv2d(image, self.df_dim, name='d_h0_conv'))
+        h1 = ops.lrelu(self.d_bn1(ops.conv2d(h0, self.df_dim*2, name='d_h1_conv')))
+        h4 = ops.linear(tf.reshape(h1, [-1, 8192]), 1, 'd_h1_lin')
 
         return tf.nn.sigmoid(h4), h4
 
@@ -328,16 +328,16 @@ Initializing a new one.
         self.STARTING_GF_DIM = define_constant(self.gf_dim, 2)
         self.STARTING_IMG_DIM = define_constant(self.image_size, 4) # 2^(number of layers - 1)
 
-        self.z_, self.h0_w, self.h0_b = linear(z, self.STARTING_IMG_DIM * self.STARTING_IMG_DIM * self.STARTING_GF_DIM, 'g_h0_lin', with_w=True)
+        self.z_, self.h0_w, self.h0_b=ops.linear(z, self.STARTING_IMG_DIM * self.STARTING_IMG_DIM * self.STARTING_GF_DIM, 'g_h0_lin', with_w=True)
 
         self.h0 = tf.reshape(self.z_, [-1, self.STARTING_IMG_DIM, self.STARTING_IMG_DIM, self.STARTING_GF_DIM])
         h0 = tf.nn.relu(self.g_bn0(self.h0))
 
-        self.h1, self.h1_w, self.h1_b = conv2d_transpose(h0,
+        self.h1, self.h1_w, self.h1_b = ops.conv2d_transpose(h0,
                     [self.batch_size, self.STARTING_IMG_DIM * 2, self.STARTING_IMG_DIM * 2, self.STARTING_GF_DIM * 2], name='g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
 
-        h4, self.h4_w, self.h4_b = conv2d_transpose(h1,
+        h4, self.h4_w, self.h4_b = ops.conv2d_transpose(h1,
                     [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, self.c_dim], name='g_h4', with_w=True)
 
         return tf.nn.tanh(h4)
@@ -346,14 +346,14 @@ Initializing a new one.
         ''' cannot be called before generator '''
         tf.get_variable_scope().reuse_variables()
 
-        h0 = tf.reshape(linear(z, self.STARTING_IMG_DIM * self.STARTING_IMG_DIM * self.STARTING_GF_DIM, 'g_h0_lin'),
+        h0 = tf.reshape(ops.linear(z, self.STARTING_IMG_DIM * self.STARTING_IMG_DIM * self.STARTING_GF_DIM, 'g_h0_lin'),
                         [-1, self.STARTING_IMG_DIM, self.STARTING_IMG_DIM, self.STARTING_GF_DIM])
         h0 = tf.nn.relu(self.g_bn0(h0, train=False))
 
-        h1 = conv2d_transpose(h0, [self.batch_size, self.STARTING_IMG_DIM * 2, self.STARTING_IMG_DIM * 2, self.STARTING_GF_DIM * 2], name='g_h1')
+        h1 = ops.conv2d_transpose(h0, [self.batch_size, self.STARTING_IMG_DIM * 2, self.STARTING_IMG_DIM * 2, self.STARTING_GF_DIM * 2], name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(h1, train=False))
 
-        h4 = conv2d_transpose(h1, [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, self.c_dim], name='g_h4')
+        h4 = ops.conv2d_transpose(h1, [self.batch_size, self.STARTING_IMG_DIM * 4, self.STARTING_IMG_DIM * 4, self.c_dim], name='g_h4')
 
         return tf.nn.tanh(h4)
 
