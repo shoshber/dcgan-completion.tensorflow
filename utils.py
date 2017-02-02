@@ -37,13 +37,34 @@ def get_nifti_image(image_path, image_size):
             return pad, pad + 1
         return pad, pad
 
-    image_array = nb.load(image_path).get_data()[:, :, 0]
+    image_array = fit_range(nb.load(image_path).get_data()[:, :, 0])
     length, width = image_array.shape
 
     length_pads = get_pad_width(length)
     width_pads = get_pad_width(width)
 
     return as_3d(np.pad(image_array, (length_pads, width_pads), 'constant', constant_values=0))
+
+def fit_range(array):
+    ''' for whatever reason this seems to work better with a range from -1 to 1
+    than the native values from 0 to 99968 found in the MNI '''
+    mni_max = np.amax(array)
+    mni_min = np.amin(array)
+    divisor = (mni_max - mni_min) / 2
+    epsilon = 0.01
+
+    array = (array / divisor) - 1
+
+    max = np.amax(array)
+    min = np.amin(array)
+    print('maxmin', max, min)
+
+    assert max <= 1
+    assert min >= -1
+    assert 1 - max < epsilon
+    assert 1 + min < epsilon
+
+    return array
 
 def as_3d(image_array):
     ''' converts 2d array to a a 3d array with the last axis being size 1 '''
