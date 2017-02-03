@@ -43,7 +43,8 @@ def get_nifti_image(image_path, image_size):
     length_pads = get_pad_width(length)
     width_pads = get_pad_width(width)
 
-    return as_3d(np.pad(image_array, (length_pads, width_pads), 'constant', constant_values=0))
+    image_array = np.pad(image_array, (length_pads, width_pads), 'constant', constant_values=0)
+    return as_3d(fit_range(image_array))
 
 def fit_range(array):
     ''' for whatever reason this seems to work better with a range from -1 to 1
